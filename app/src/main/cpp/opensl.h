@@ -14,7 +14,7 @@ typedef struct ThreadLock_ {
 
     pthread_mutex_t m;
     pthread_cond_t c;
-    u_char s;
+    unsigned char s;
 
 } ThreadLock;
 

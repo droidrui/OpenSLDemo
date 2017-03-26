@@ -14,7 +14,7 @@ import java.io.File;
 public class PlayActivity extends AppCompatActivity {
 
     private Button mBtn;
-    private int mState;
+    private int mState = 0;
     private AudioJNI mAudioJNI;
 
     @Override

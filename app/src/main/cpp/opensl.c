@@ -79,14 +79,17 @@ void createRecorder(OpenSLEngine *engine, int sampleRate, int numChannel, int bu
             break;
         default:
             sr = SL_SAMPLINGRATE_44_1;
+            break;
     }
     SLDataLocator_IODevice srcLocat = {SL_DATALOCATOR_IODEVICE, SL_IODEVICE_AUDIOINPUT,
                                        SL_DEFAULTDEVICEID_AUDIOINPUT, NULL};
     SLDataSource dataSrc = {&srcLocat, NULL};
 
     SLDataLocator_AndroidSimpleBufferQueue snkLocat = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
-    SLuint32 channelMask = SL_SPEAKER_FRONT_CENTER;
-    if (numChannel > 1) {
+    SLuint32 channelMask;
+    if (numChannel == 1) {
+        channelMask = SL_SPEAKER_FRONT_CENTER;
+    } else {
         channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
     }
     SLDataFormat_PCM snkFmt = {
@@ -168,10 +171,13 @@ void createPlayer(OpenSLEngine *engine, int sampleRate, int numChannel, int buff
             break;
         default:
             sr = SL_SAMPLINGRATE_44_1;
+            break;
     }
     SLDataLocator_AndroidSimpleBufferQueue srcLocat = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
-    SLuint32 channelMask = SL_SPEAKER_FRONT_CENTER;
-    if (numChannel > 1) {
+    SLuint32 channelMask;
+    if (numChannel == 1) {
+        channelMask = SL_SPEAKER_FRONT_CENTER;
+    } else {
         channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
     }
     SLDataFormat_PCM srcFmt = {
@@ -272,17 +278,17 @@ void recordCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
 
 void readFromRecorder(OpenSLEngine *engine, short *buffer, int size) {
     int index = engine->currRecordReadIndex;
-    short *recordBuffer = engine->recordBuffer[engine->currRecordBufferIndex];
+    short *slBuffer = engine->recordBuffer[engine->currRecordBufferIndex];
     for (int i = 0; i < size; i++) {
         if (index >= engine->recordBufferSize) {
             waitThreadLock(engine->recordLock);
-            (*engine->recorderBufferQueueItf)->Enqueue(engine->recorderBufferQueueItf, recordBuffer,
+            (*engine->recorderBufferQueueItf)->Enqueue(engine->recorderBufferQueueItf, slBuffer,
                                                        engine->recordBufferSize * sizeof(short));
             engine->currRecordBufferIndex = (engine->currRecordBufferIndex ? 0 : 1);
             index = 0;
-            recordBuffer = engine->recordBuffer[engine->currRecordBufferIndex];
+            slBuffer = engine->recordBuffer[engine->currRecordBufferIndex];
         }
-        buffer[i] = recordBuffer[index++];
+        buffer[i] = slBuffer[index++];
     }
     engine->currRecordReadIndex = index;
 }
@@ -295,17 +301,17 @@ void playCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
 
 void writeToPlayer(OpenSLEngine *engine, short *buffer, int size) {
     int index = engine->currPlayWriteIndex;
-    short *playBuffer = engine->playBuffer[engine->currPlayBufferIndex];
+    short *slBuffer = engine->playBuffer[engine->currPlayBufferIndex];
     for (int i = 0; i < size; i++) {
-        playBuffer[index++] = buffer[i];
+        slBuffer[index++] = buffer[i];
         if (index >= engine->playBufferSize) {
             waitThreadLock(engine->playLock);
             (*engine->playerBufferQueueItf)->Enqueue(engine->playerBufferQueueItf,
-                                                     playBuffer,
+                                                     slBuffer,
                                                      engine->playBufferSize * sizeof(short));
             engine->currPlayBufferIndex = (engine->currPlayBufferIndex ? 0 : 1);
             index = 0;
-            playBuffer = engine->playBuffer[engine->currPlayBufferIndex];
+            slBuffer = engine->playBuffer[engine->currPlayBufferIndex];
         }
     }
     engine->currPlayWriteIndex = index;

@@ -3,7 +3,6 @@
 //
 #include <jni.h>
 #include <stdio.h>
-#include <string.h>
 #include "opensl.h"
 
 static OpenSLEngine *engine;
@@ -29,9 +28,7 @@ void *record(void *context) {
     g_loop_exit = 0;
     while (!g_loop_exit) {
         readFromRecorder(engine, buffer, recordBufferSize);
-        if (fwrite(buffer, sizeof(short), recordBufferSize, recordFile) != 1) {
-            break;
-        }
+        fwrite(buffer, sizeof(short), recordBufferSize, recordFile);
     }
     destroyEngine(engine);
     fclose(recordFile);
@@ -75,9 +72,7 @@ void *play(void *context) {
     short buffer[playBufferSize];
     g_loop_exit = 0;
     while (!g_loop_exit && !feof(playFile)) {
-        if (fread(buffer, sizeof(short), playBufferSize, playFile) != 1) {
-            break;
-        }
+        fread(buffer, sizeof(short), playBufferSize, playFile);
         writeToPlayer(engine, buffer, playBufferSize);
     }
     destroyEngine(engine);
